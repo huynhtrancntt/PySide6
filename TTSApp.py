@@ -11,7 +11,9 @@ from ui_setting import show_about_ui, _init_addStyle
 from ui_updatedialog import UI_UpdateDialog
 from ui_checkupdate import UI_CheckUpdate
 
-from ui_setting import APP_VERSION
+from ui_setting import APP_VERSION, resource_path
+
+import os
 
 
 class TTSApp(QWidget):
@@ -20,6 +22,9 @@ class TTSApp(QWidget):
         self.version = APP_VERSION  # Placeholder for server connection
         self.setWindowTitle("TTS App Clone")
         self.setMinimumSize(800, 600)
+        icon_path = resource_path("ico.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         _init_addStyle(self)
         self.main_layout = QVBoxLayout(self)
         self.init_ui()
@@ -132,12 +137,14 @@ class TTSApp(QWidget):
         self.version_box.setObjectName("versionBox")
         self.version_layout = QVBoxLayout(self.version_box)
 
-        self.version_label = QLabel("<b>Cập nhật phiên bản mới 1.1.2</b>")
+        self.version_label = QLabel("")
         self.version_label.setStyleSheet("color: #05df60; font-size: 16px;")
-        self.version_name = QLabel(
-            "<span> 📋 Tên phiên bản: TTSApp</span>")
+        self.version_old = QLabel(
+            f"<span>📱 Phiên bản hiện tại: v{APP_VERSION}</span>")
+        self.version_name = QLabel()
         self.version_layout.addWidget(self.version_label)
-        # self.version_layout.addWidget(self.version_name)
+        self.version_layout.addWidget(self.version_old)
+        self.version_layout.addWidget(self.version_name)
 
         buttons = QHBoxLayout()
         btn_install = QPushButton("🚀 Cài đặt tự động")
@@ -326,7 +333,6 @@ class TTSApp(QWidget):
         # Thêm vào layout chính
         self.main_layout.addWidget(QLabel("📝 Nhật ký hoạt động"))
         self.main_layout.addWidget(self.output_list)
-        self.output_list.addItem("Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!")
         self.output_list.addItem("Nhập URL video hoặc văn bản để bắt đầu.")
 
     # def _create_options_section(self):
@@ -376,9 +382,13 @@ class TTSApp(QWidget):
 
     def _on_update_available(self, update_info):
         self.output_list.addItem("📥 Cập nhật có sẵn:")
-        version = update_info.get('version', '1.1.2')
+        version = update_info.get('version', '1.0.0')
+        version_name = update_info.get('name', 'Phiên bản mẫu')
 
-        self.version_label.setText(f"<b>Cập nhật phiên bản mới v{version}</b>")
+        self.version_label.setText(
+            f"<b>🎉 Cập nhật phiên bản mới v{version}</b>")
+        self.version_name.setText(
+            f"<span>📋 Tên phiên bản: {version_name}</span>")
         dialog = UI_UpdateDialog(update_info, self)
         dialog.exec()
 

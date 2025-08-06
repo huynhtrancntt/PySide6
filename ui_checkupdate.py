@@ -4,13 +4,14 @@ from PySide6.QtCore import QThread, Signal
 from ui_setting import UPDATE_CHECK_URL, APP_VERSION
 
 
-class UI_CheckUpdate(QThread,):
+class UI_CheckUpdate(QThread):
     """Kiểm tra cập nhật ứng dụng"""
     """Worker thread để kiểm tra update"""
 
     update_available = Signal(dict)
     no_update = Signal()
     error_occurred = Signal(str)
+    progress_update = Signal(int, str)  # progress, message
 
     def __init__(self):
         super().__init__()
@@ -18,8 +19,13 @@ class UI_CheckUpdate(QThread,):
     def run(self):
         """Kiểm tra phiên bản mới"""
         try:
+
+            self.progress_update.emit(30, "🔄 Đang kiểm tra...")
+
             # Gửi request để lấy thông tin release mới nhất
             response = requests.get(UPDATE_CHECK_URL, timeout=10)
+
+            self.progress_update.emit(60, "📥 Đang xử lý response...")
 
             if response.status_code == 200:
                 # print("✅ Kết nối thành công đến server")
@@ -43,6 +49,8 @@ class UI_CheckUpdate(QThread,):
                     return
 
                 published_at = release_data.get('published_at', '')
+
+                self.progress_update.emit(80, "🔍 Đang so sánh phiên bản...")
                 # So sánh phiên bản
                 if self._is_newer_version(latest_version, APP_VERSION):
                     update_info = {
@@ -53,8 +61,11 @@ class UI_CheckUpdate(QThread,):
                         'download_url': download_url,
                         'published_at': published_at
                     }
+                    self.progress_update.emit(100, "🎉 Tìm thấy phiên bản mới!")
                     self.update_available.emit(update_info)
                 else:
+                    self.progress_update.emit(
+                        100, "✅ Phiên bản hiện tại là mới nhất")
                     self.no_update.emit()
             else:
                 self.error_occurred.emit(
