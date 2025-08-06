@@ -1,196 +1,44 @@
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QTextEdit, QSlider, QLineEdit, QFileDialog, QFrame, QRadioButton, QListWidget, QCheckBox, QMessageBox, QSpacerItem, QSizePolicy
+    QComboBox, QTextEdit, QSlider, QLineEdit, QFileDialog, QFrame, QRadioButton, QListWidget, QCheckBox, QMessageBox, QSpacerItem, QSizePolicy, QProgressBar, QMenu, QMenuBar
 )
 from PySide6.QtCore import Qt
 import sys
+
+from PySide6.QtGui import QScreen, QAction, QIcon
+
+from ui_setting import show_about_ui, _init_addStyle
+from ui_updatedialog import UI_UpdateDialog
+from ui_checkupdate import UI_CheckUpdate
+
+from ui_setting import APP_VERSION
 
 
 class TTSApp(QWidget):
     def __init__(self):
         super().__init__()
+        self.version = APP_VERSION  # Placeholder for server connection
         self.setWindowTitle("TTS App Clone")
         self.setMinimumSize(800, 600)
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #0f172b;
-                color: #e2e8f0;
-                font-family: Arial;
-                font-size: 14px;
-            }
-            QLabel {
-                color: #ffffff;
-                background-color: transparent;
-                font-weight: normal;
-            }
-            QPushButton {
-                background-color: #05ff8f;
-                color: #000;
-                padding: 8px 16px;
-                border-radius: 4px;
-            }
-            QPushButton:hover {
-                background-color: #03b264;
-            }
-            QPushButton#skipBtn {
-                background-color: #163b4e;
-                color: #4994e7;
-            }
-            QPushButton#skipBtn:hover {
-                background-color: #133544;
-            }
-            QTextEdit, QLineEdit, QComboBox {
-                background-color: #1e293b;
-                color: #e2e8f0;
-                border: 1px solid #334155;
-                border-radius: 6px;
-                padding: 6px;
-            }
-            QFrame#versionBox {
-                background-color: #0d2b32;
-                border-radius: 10px;
-                padding: 12px;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                border: 1px solid #334155;
-                border-radius: 50px;
-                background-color: transparent;
-            }
-            QCheckBox::indicator:checked {
-                background-color: #05ff8f;
-            }
-            QComboBox {
-                background-color: #1e293b;
-                color: #e2e8f0;
-                border: 1px solid #334155;
-                border-radius: 6px;
-                padding: 6px;   
-            }
-            QComboBox::drop-down {
-                subcontrol-origin: padding;
-                subcontrol-position: top right;
-                width: 20px;
-                border-left-width: 1px;
-                border-left-color: #334155;
-                border-left-style: solid;
-            }
-            QComboBox::down-arrow {
-                image: url('down-arrow.png');  /* Replace with your down arrow icon */
-                width: 16px;
-                height: 16px;
-            }
-            QSlider::groove:horizontal {
-                background: #334155;
-                height: 8px;
-                border-radius: 4px;
-            }
-            QSlider::sub-page:horizontal {
-                background: #05ff8f;
-                height: 8px;
-             
-                              border-radius: 4px;
-            }
-            QSlider::handle:horizontal {
-                background: #05df60;
-                height: 16px;
-                width: 16px;
-                margin: -4px 0;
-                border-radius: 8px;
-            }
-            QCheckBox {
-                color: #e2e8f0;
-                font-size: 14px;
-            }
-            QRadioButton {
-                color: #e2e8f0;
-                font-size: 14px;
-            }
-            QRadioButton::indicator {
-                width: 16px;
-                height: 16px;
-                border-radius: 8px;
-                background-color: transparent;
-            }
-            QRadioButton::indicator:checked {
-                background-color: #05ff8f;
-            }
-            QListWidget {
-                background-color: #1e293b;
-                color: #e2e8f0;
-                border: 1px solid #334155;
-                border-radius: 6px;
-                font-family: "Consolas", "Monaco", monospace;
-                font-size: 12px;
-                padding: 6px;
-                selection-background-color: #4299e1;
-                outline: none;
-            }
-            QListWidget::item {
-                padding: 6px 8px;
-                border-bottom: 1px solid #4a5568;
-                min-height: 20px;
-                word-wrap: break-word;
-            }
-            QListWidget::item:hover {
-                background-color: #4a5568;
-            }
-            QListWidget::item:selected {
-                background-color: #4299e1;
-                color: #ffffff;
-            }                           
-        """)
-
+        _init_addStyle(self)
         self.main_layout = QVBoxLayout(self)
         self.init_ui()
+        self.update_checker = None
+        self.is_manual_check = False
+
+        # Thay đổi thành silent=True
+        self._start_update_check()
 
     def init_ui(self):
-        # Version info
-        version_box = QFrame()
-        version_box.setObjectName("versionBox")
-        version_layout = QVBoxLayout(version_box)
 
-        version_label = QLabel("<b>Cập nhật phiên bản mới 1.1.2</b>")
-        version_label.setStyleSheet("color: #05df60; font-size: 16px;")
-        release_label = QLabel(
-            "<span style='color:#05ff8f'>Ngày phát hành: 15/03/2025</span>")
-        version_layout.addWidget(version_label)
-        version_layout.addWidget(release_label)
+        # Menu bar
+        self._create_menubar()
 
-        feature_list = QLabel("""
-        <ul style='color:#05ff8f; list-style-type: disc; padding: 5px;'>
-            <li>Chuyển đổi văn bản thành giọng nói (TTS)</li>
-            <li>Thêm tính năng chuyển văn bản thành giọng nói (TTS)</li>
-            <li>Tính năng Pro: OpenAI TTS (BYOK)</li>
-            <li>Cải thiện trạng Pro</li>
-            <li>Một số tối ưu và tính chỉnh khác</li>
-        </ul>
-        """)
-        version_layout.addWidget(feature_list)
-
-        buttons = QHBoxLayout()
-        btn_install = QPushButton("⬇️ Tải về và cài đặt")
-        btn_skip = QPushButton("❌ Bỏ qua")
-        btn_skip.setObjectName("skipBtn")
-        buttons.addWidget(btn_install)
-        buttons.addWidget(btn_skip)
-        version_layout.addLayout(buttons)
-
-        self.main_layout.addWidget(version_box)
-
+        #
+        self._create_version_update_ui()
         # URL input
-        url_layout = QVBoxLayout()
-        url_label = QLabel("Nhập URL video:")
-        url_layout.addWidget(url_label)
-        self.main_layout.addLayout(url_layout)
-
-        self.url_edit = QTextEdit()
-        self.url_edit.setObjectName("urlEditVideo")
-        self.url_edit.setPlaceholderText(
-            "Nhập hoặc dán video URL tại đây...\nVí dụ: https://www.example.com/video.mp4")
-        self.url_edit.setFixedHeight(120)
-        self.main_layout.addWidget(self.url_edit)
+        self._create_url_ui()
+        self._create_folder_ui()
 
         # Chế độ tải
         self.type_video = QComboBox()
@@ -226,6 +74,8 @@ class TTSApp(QWidget):
         self._create_download_section()
 
         self._create_log_section()
+        # Thanh tiến trình
+        self._create_progress_section()
         # Giới thiệ  TTS
         # self.main_layout.addWidget(
         #     QLabel("\nCông cụ chuyển văn bản thành giọng nói miễn phí"))
@@ -276,6 +126,143 @@ class TTSApp(QWidget):
         # bottom_buttons.addWidget(QPushButton("⏲ Lịch sử"))
         # self.main_layout.addLayout(bottom_buttons)
 
+    def _create_version_update_ui(self):
+        # Version info
+        self.version_box = QFrame()
+        self.version_box.setObjectName("versionBox")
+        self.version_layout = QVBoxLayout(self.version_box)
+
+        self.version_label = QLabel("<b>Cập nhật phiên bản mới 1.1.2</b>")
+        self.version_label.setStyleSheet("color: #05df60; font-size: 16px;")
+        self.version_name = QLabel(
+            "<span> 📋 Tên phiên bản: TTSApp</span>")
+        self.version_layout.addWidget(self.version_label)
+        # self.version_layout.addWidget(self.version_name)
+
+        buttons = QHBoxLayout()
+        btn_install = QPushButton("🚀 Cài đặt tự động")
+        self.btn_skip = QPushButton("❌ Bỏ qua")
+        self.btn_skip.setObjectName("skipBtn")
+        self.btn_skip.clicked.connect(self.skip_update_main)
+        buttons.addWidget(btn_install)
+        buttons.addWidget(self.btn_skip)
+        self.version_layout.addLayout(buttons)
+
+        self.main_layout.addWidget(self.version_box)
+        self.version_box.setVisible(False)  # Ban đầu ẩn box phiên bản
+
+    def _create_menubar(self):
+        """Tạo thanh menu cho ứng dụng"""
+        self.menubar = QMenuBar(self)
+
+        # Menu File
+        file_menu = self.menubar.addMenu("📁 File")
+
+        # Action Reset Settings
+        reset_action = QAction("🔄 Reset Settings", self)
+        # reset_action.triggered.connect(self.reset_settings)
+        file_menu.addAction(reset_action)
+
+        file_menu.addSeparator()
+
+        # Action Exit
+        exit_action = QAction("❌ Exit", self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+        # Menu Settings
+        settings_menu = self.menubar.addMenu("⚙️ Settings")
+
+        # Action Save Current Settings
+        save_settings_action = QAction("💾 Save Current Settings", self)
+        # save_settings_action.triggered.connect(self.save_settings)
+        settings_menu.addAction(save_settings_action)
+
+        # Action Load Default Settings
+        load_default_action = QAction("📋 Load Default Settings", self)
+        # load_default_action.triggered.connect(self.load_default_settings)
+        settings_menu.addAction(load_default_action)
+
+        settings_menu.addSeparator()
+
+        # Action View Settings Info
+        info_action = QAction("📊 View Settings Info", self)
+        # info_action.triggered.connect(self.show_settings_info)
+        settings_menu.addAction(info_action)
+
+        # Menu Help
+        help_menu = self.menubar.addMenu("❓ Help")
+
+        # Action Check for Updates
+        update_action = QAction("🔄 Check for Updates", self)
+
+        update_action.triggered.connect(self.show_update_dialog)
+        help_menu.addAction(update_action)
+
+        help_menu.addSeparator()
+
+        # Action Check Tool Versions
+        version_action = QAction("🔧 Check Tool Versions", self)
+        # version_action.triggered.connect(self.check_tool_versions)
+        help_menu.addAction(version_action)
+
+        help_menu.addSeparator()
+
+        # Action View Log File
+        log_action = QAction("📝 View Log File", self)
+        # log_action.triggered.connect(self.show_log_file)
+        help_menu.addAction(log_action)
+
+        help_menu.addSeparator()
+
+        # Action About
+        about_action = QAction("ℹ️ About", self)
+        about_action.triggered.connect(self.show_about)
+        help_menu.addAction(about_action)
+        # Thêm thanh menu vào layout chính
+        self.main_layout.setMenuBar(self.menubar)
+
+    def _create_url_ui(self):
+        """Tạo giao diện nhập URL video hoặc văn bản"""
+        url_layout = QVBoxLayout()
+        url_label = QLabel("🔗 Nhập URL video hoặc văn bản")
+        self.url_input = QTextEdit()
+        self.url_input.setPlaceholderText(
+            "Nhập URL video hoặc văn bản tại đây...")
+        self.url_input.setObjectName("urlInput")
+        url_layout.addWidget(url_label)
+        url_layout.addWidget(self.url_input)
+        self.main_layout.addLayout(url_layout)
+
+    def _create_folder_ui(self):
+        """Tạo giao diện nhập tên thư mục tải xuống"""
+        # Tạo layout cho phần nhập tên thư mục
+        layout_folder = QVBoxLayout()
+        folder_title_layout = QHBoxLayout()
+        folder_title_layout.addWidget(QLabel("📁 Tên thư mục tải (tuỳ chọn)"))
+        self.main_layout.addLayout(folder_title_layout)
+        folder_layout = QHBoxLayout()
+
+        self.folder_name_input = QTextEdit()
+        self.folder_name_input.setPlaceholderText(
+            "Nhập tên thư mục hoặc chọn thư mục...")
+        self.folder_name_input.setObjectName("folderNameInput")
+        self.folder_name_input.setFixedHeight(38)
+        self.folder_button = QPushButton("Open Folder")
+        self.folder_button.setObjectName("folderBtn")
+        self.folder_button.setToolTip("Chọn thư mục để lưu video")
+        # Kết nối nút với hàm chọn thư mục (nếu cần)
+
+        self.folder_button.setFixedWidth(120)
+        # self.folder_button.clicked.connect(self.select_folder)
+
+        folder_layout.addWidget(self.folder_name_input)
+        folder_layout.addWidget(self.folder_button)
+
+        layout_folder.addLayout(folder_title_layout)
+        layout_folder.addLayout(folder_layout)
+        self.main_layout.addLayout(layout_folder)
+
     def _create_options_section(self):
         """Dòng 1: chuyển phụ đề và mp3"""
         row1_layout = QHBoxLayout()
@@ -291,6 +278,21 @@ class TTSApp(QWidget):
         row1_layout.addStretch()
 
         self.main_layout.addLayout(row1_layout)
+
+    def _create_progress_section(self):
+        """Tạo thanh tiến trình"""
+        # Dòng 1: Thanh tiến trình
+        # row_progress = QHBoxLayout()
+        self.progress = QProgressBar()
+        self.progress.setVisible(False)  # Ban đầu ẩn thanh tiến trình
+        self.progress.setObjectName("progressBar")
+        self.progress.setRange(0, 100)  # Thiết lập phạm vi từ
+        # row_progress.addWidget(self.progress)
+        # Hiển thị văn bản trên thanh tiến trình
+        self.progress.setVisible(True)
+
+        self.progress.setValue(70)  # Thiết lập giá trị ban đầu là 0
+        self.main_layout.addWidget(self.progress)
 
     def _create_download_section(self):
         """Dòng 2: Nút tải xuống và nút dừng"""
@@ -324,7 +326,7 @@ class TTSApp(QWidget):
         # Thêm vào layout chính
         self.main_layout.addWidget(QLabel("📝 Nhật ký hoạt động"))
         self.main_layout.addWidget(self.output_list)
-        self.output_list.addItem("Chào mừng bạn đến với ứng dụng TTS!")
+        self.output_list.addItem("Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!Chào mừng bạn đến với ứng dụng TTS!")
         self.output_list.addItem("Nhập URL video hoặc văn bản để bắt đầu.")
 
     # def _create_options_section(self):
@@ -336,6 +338,70 @@ class TTSApp(QWidget):
     #     row2_layout.addStretch()
 
     #     self.main_layout.addLayout(row2_layout)
+
+    def show_about(self):
+        """Hiển thị thông tin về ứng dụng"""
+        show_about_ui(self)
+
+    def skip_update_main(self):
+        self.version_box.setVisible(False)
+
+    def _start_update_check(self):
+
+        self.update_checker = UI_CheckUpdate()
+        self.update_checker.update_available.connect(
+            self._on_update_available)
+        self.update_checker.error_occurred.connect(
+            lambda error: QMessageBox.critical(self, "Lỗi", f"Có lỗi xảy ra khi kiểm tra cập nhật:\n{error}"))
+        self.update_checker.no_update.connect(
+            lambda: self._on_no_update(silent=False))
+        self.update_checker.start()
+        # self.is_manual_check = True  # Đặt cờ là manual check
+        # if self.is_manual_check:
+        #     self.output_list.addItem("🔄 Đang kiểm tra phiên bản mới manual...")
+        # else:
+        #     self.output_list.addItem("🔄 Đang kiểm tra phiên bản mới...")
+
+    def show_update_dialog(self):
+
+        self.is_manual_check = True
+        self._start_update_check()
+
+        # Tạo dialog cập nhật
+
+        # self.update_checker.no_update.connect(lambda: QMessageBox.information(
+        #     self, "Không có cập nhật", "Ứng dụng của bạn đã là phiên bản mới nhất."))
+        # dialog = UI_UpdateDialog(self.update_info, self)
+        # dialog.exec()
+
+    def _on_update_available(self, update_info):
+        self.output_list.addItem("📥 Cập nhật có sẵn:")
+        version = update_info.get('version', '1.1.2')
+
+        self.version_label.setText(f"<b>Cập nhật phiên bản mới v{version}</b>")
+        dialog = UI_UpdateDialog(update_info, self)
+        dialog.exec()
+
+        # Hiển thị box phiên bản khi có update
+        self.version_box.setVisible(True)
+
+    def _on_no_update(self, silent):
+        """Xử lý khi không có update"""
+
+        if not silent:
+            self.output_list.addItem("✅ Bạn đang sử dụng phiên bản mới nhất")
+
+            if self.is_manual_check:
+                # Chỉ hiển thị MessageBox khi check thủ công, không hiển thị khi auto-check
+                QMessageBox.information(
+                    self, "Thông báo", f"✅ Bạn đang sử dụng phiên bản mới nhất (v{self.version})")
+            # Reset flag sau khi xử lý
+            self.is_manual_check = False
+
+        else:
+            # Khi auto-check, chỉ hiển thị trong log
+            self.output_list.addItem(
+                "✅ Phiên bản hiện tại là mới nhất (auto-check)")
 
 
 if __name__ == "__main__":
