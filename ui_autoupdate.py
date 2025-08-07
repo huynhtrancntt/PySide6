@@ -167,7 +167,7 @@ class UI_AutoUpdateDialog(QWidget):
     def update_download_progress(self, value):
         """Cập nhật progress bar cho download"""
         self.update_progress_bar.setValue(value)
-        if value < 50:
+        if value < 80:
             self.update_status_label.setText(f"⬇️ Đang tải về... {value}%")
         else:
             self.update_status_label.setText(f"📦 Đang cài đặt... {value}%")

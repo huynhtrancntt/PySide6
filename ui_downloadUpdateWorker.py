@@ -77,7 +77,7 @@ class DownloadUpdateWorker(QThread):
 
                         if total_mb > 0:
                             # 50% cho download
-                            percent = int((downloaded_mb / total_mb) * 50)
+                            percent = int((downloaded_mb / total_mb) * 100)
                             self.progress_signal.emit(percent)
                             self.message_signal.emit(
                                 f"⬇️ Đang tải: {downloaded_mb:.1f}/{total_mb:.1f} MB ({percent}%)")
@@ -113,7 +113,7 @@ class DownloadUpdateWorker(QThread):
 
                     zip_ref.extract(file_name, extract_to)
                     # 50% cho extract (từ 50% đến 100%)
-                    percent = 50 + int((i + 1) / total_files * 50)
+                    percent = 0 + int((i + 1) / total_files * 100)
                     self.progress_signal.emit(percent)
                     self.message_signal.emit(f"📦 Giải nén: {file_name}")
 
