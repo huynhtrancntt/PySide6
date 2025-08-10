@@ -1,7 +1,7 @@
 import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QScreen, QAction, QIcon
-from mainwindow import MainWindow
+from app import MainWindow
 
 # Run
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ from ui_setting import APP_VERSION, resource_path
 import os
 
 
-class TTSApp(QWidget):
+class Main(QWidget):
     def __init__(self):
         super().__init__()
         self.version = APP_VERSION  # Placeholder for server connection
@@ -304,8 +304,9 @@ class TTSApp(QWidget):
     def _create_download_section(self):
         """Dòng 2: Nút tải xuống và nút dừng"""
         row2_layout = QHBoxLayout()
-        self.download_button = QPushButton("⬇️ Tải xuống")
+        self.download_button = QPushButton("🚀 Bắt đầu tải")
         self.download_button.setObjectName("downloadBtn")
+        # self.download_button.clicked.connect(self.start_download)
         self.stop_button = QPushButton("⏹️ Dừng")
         self.stop_button.setObjectName("stopBtn")
 
@@ -416,6 +417,6 @@ class TTSApp(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = TTSApp()
+    window = Main()
     window.show()
     sys.exit(app.exec())

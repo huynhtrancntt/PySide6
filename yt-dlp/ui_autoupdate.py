@@ -197,7 +197,7 @@ class UI_AutoUpdateDialog(QWidget):
                                 f"❌ Không thể cập nhật: {message}")
 
             # Ẩn progress bar sau 3 giây
-            # QTimer.singleShot(3000, self._hide_update_progress)
+            # QTimer.singleShot(3000, self._hide_update_progress
 
     def add_download_log(self, message):
         """Thêm log cho quá trình download - ẩn log"""

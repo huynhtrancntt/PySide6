@@ -5,7 +5,7 @@ import os
 
 # Version of the application
 UPDATE_CHECK_URL = "https://raw.githubusercontent.com/huynhtrancntt/auto_update/main/update.json"
-APP_VERSION = "1.6.0"  # Placeholder for actual version, replace with your app's version
+APP_VERSION = "1.2.0"  # Placeholder for actual version, replace with your app's version
 ABOUT_TEMPLATE = """
 <h3>🎬 HT DownloadVID v{version}</h3>
 <p><b>Ứng dụng download video và phụ đề</b></p>
@@ -42,7 +42,7 @@ def show_about_ui(self):
 
 
 def _init_addStyle(self):
-    arrow_icon_path = resource_path("down-arrow.png").replace("\\", "/")
+    arrow_icon_path = resource_path("images/down-arrow.png").replace("\\", "/")
 
     self.setStyleSheet(f"""
         QMenuBar {{
@@ -230,5 +230,31 @@ def _init_addStyle(self):
         QProgressBar::chunk {{
             background-color: #4299e1;
             border-radius: 5px;
-        }}     
+        }}   
+        QTabBar::tab {{
+                font-weight: bold;
+                color: white;
+                margin-top: 10px;
+                padding: 8px;
+                border: none; /* Bỏ toàn bộ viền */
+            }}
+            QTabBar::tab:selected {{
+               border-bottom: 1px solid #28a745;
+            }}
+            QTabWidget::pane {{
+    border: none;       /* Bỏ toàn bộ viền khung */
+    outline: none;      /* Bỏ viền focus */
+}}
+            QGroupBox {{
+             border: 1px solid #334155;      /* Màu viền */
+            border-radius: 8px;             /* Bo góc */
+            margin-top: 10px;               /* Khoảng cách tiêu đề xuống nội dung */
+            padding: 10px;                   /* Khoảng cách trong */
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                subcontrol-position: top left;  /* Vị trí tiêu đề */
+                padding: 0 5px;                 /* Khoảng cách giữa chữ và viền */
+                /* color: #FFD700;*/                 /* Màu chữ tiêu đề */
+            }}  
     """)

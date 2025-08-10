@@ -58,7 +58,8 @@ class UI_CheckUpdate(QThread):
                         # 'version': 'v2.0.1',  # Placeholder for actual version
                         'name': release_name,
                         'notes': release_notes,
-                        'download_url': download_url,
+                        # 'download_url': download_url,
+                        'download_url': "http://192.168.20.103:8000/download/update_v1.6.0.zip",
                         'published_at': published_at
                     }
                     self.progress_update.emit(100, "🎉 Tìm thấy phiên bản mới!")

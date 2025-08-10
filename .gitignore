@@ -2,3 +2,7 @@ venv
 __pycache__
 dist
 build
+ffmpeg
+yt-dlp.exe
+yt-dlp\data
+ffmpeg.exe
