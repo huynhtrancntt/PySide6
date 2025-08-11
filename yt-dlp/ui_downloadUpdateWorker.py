@@ -1,4 +1,5 @@
 import os
+
 import shutil
 import zipfile
 import requests
@@ -11,24 +12,29 @@ class DownloadUpdateWorker(QThread):
     message_signal = Signal(str)
     finished_signal = Signal(bool, str)  # success, message
 
-    def __init__(self, download_url, version):
+    def __init__(self, download_url, version, zip_path):
         super().__init__()
         self.download_url = download_url
         self.version = version
         self.stop_flag = False
+        self.zip_path = zip_path
 
     def run(self):
         """Thực hiện download và extract"""
 
         try:
+            # Ghép đường dẫn file zip
             # Tạo tên file
-            output_file = f"update_v{self.version}.zip"
-            # extract_to = "temp_update"
+            if not self.zip_path:
+                self.zip_path = f"{self.version}.zip"
 
+            # output_file = f"update_v{self.version}.zip"
+            # # extract_to = "temp_update"
+            # output_file = rf"C:\Users\HT\Desktop\Test_Update\update_v{self.version}.zip"
             # Bước 1: Download file
             self.message_signal.emit("⬇️ Đang tải file cập nhật...")
             # print("Start download and extract")
-            if not self._download_with_progress(self.download_url, output_file):
+            if not self._download_with_progress(self.download_url, self.zip_path):
                 return
 
             # if self.stop_flag:
@@ -93,84 +99,6 @@ class DownloadUpdateWorker(QThread):
         except Exception as e:
             self.message_signal.emit(f"❌ Lỗi tải xuống: {str(e)}")
             return False
-
-    # def _extract_and_install(self, zip_file, extract_to):
-    #     """Giải nén và cài đặt cập nhật"""
-    #     try:
-    #         # Xóa thư mục tạm cũ nếu có
-    #         if os.path.exists(extract_to):
-    #             shutil.rmtree(extract_to)
-    #         os.makedirs(extract_to)
-
-    #         # Giải nén
-    #         with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-    #             file_list = zip_ref.namelist()
-    #             total_files = len(file_list)
-
-    #             for i, file_name in enumerate(file_list):
-    #                 if self.stop_flag:
-    #                     # Xóa thư mục extract và file zip
-    #                     self._cleanup(zip_file, extract_to)
-    #                     return False
-
-    #                 zip_ref.extract(file_name, extract_to)
-    #                 # 50% cho extract (từ 50% đến 100%)
-    #                 percent = 0 + int((i + 1) / total_files * 100)
-    #                 self.progress_signal.emit(percent)
-    #                 self.message_signal.emit(f"📦 Giải nén: {file_name}")
-
-    #         # Copy files
-    #         self.message_signal.emit("📋 Đang cập nhật files...")
-    #         current_dir = os.getcwd()
-
-    #         copied_files = []
-    #         for root, dirs, files in os.walk(extract_to):
-    #             for file in files:
-    #                 if self.stop_flag:
-    #                     # Xóa thư mục extract và file zip
-    #                     self._cleanup(zip_file, extract_to)
-    #                     return False
-
-    #                 src_file = os.path.join(root, file)
-    #                 rel_path = os.path.relpath(src_file, extract_to)
-    #                 dst_file = os.path.join(current_dir, rel_path)
-
-    #                 # Tạo thư mục đích nếu chưa có
-    #                 dst_dir = os.path.dirname(dst_file)
-    #                 if dst_dir and not os.path.exists(dst_dir):
-    #                     os.makedirs(dst_dir)
-
-    #                 # Copy file
-    #                 shutil.copy2(src_file, dst_file)
-    #                 copied_files.append(rel_path)
-    #                 self.message_signal.emit(f"📋 Cập nhật: {rel_path}")
-
-    #         # Lưu phiên bản mới vào file
-    #         # try:
-    #         #     version_file = os.path.join(current_dir, "version.txt")
-    #         #     with open(version_file, 'w', encoding='utf-8') as f:
-    #         #         f.write(self.version)
-    #         #     self.message_signal.emit(
-    #         #         f"💾 Đã lưu phiên bản mới: {self.version}")
-    #         # except Exception as e:
-    #         #     self.message_signal.emit(f"⚠️ Không thể lưu phiên bản: {e}")
-
-    #         # Dọn dẹp - xóa file zip và thư mục extract
-    #         self.message_signal.emit("🧹 Đang dọn dẹp...")
-    #         self._cleanup(zip_file, extract_to)
-
-    #         self.progress_signal.emit(100)
-    #         self.message_signal.emit(
-    #             f"✅ Đã cập nhật {len(copied_files)} files")
-    #         self.message_signal.emit(
-    #             "🎉 Cập nhật hoàn tất! Ứng dụng sẽ khởi động lại...")
-    #         return True
-
-    #     except Exception as e:
-    #         self.message_signal.emit(f"❌ Lỗi giải nén: {str(e)}")
-    #         # Xóa file zip và thư mục extract khi có lỗi
-    #         self._cleanup(zip_file, extract_to)
-    #         return False
 
     def _cleanup(self, zip_file, extract_to):
         """Dọn dẹp files tạm"""

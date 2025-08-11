@@ -258,6 +258,7 @@ class Tab_1(QWidget):
             thread.message_signal.connect(self.append_log)
             thread.finished_signal.connect(self.handle_thread_done)
             thread.progress_signal.connect(self.update_progress)
+            thread.error_signal.connect(self.error_thread)
             self.active_threads.append(thread)
             thread.start()
             self.running += 1
@@ -283,6 +284,9 @@ class Tab_1(QWidget):
     def update_progress(self, value):
         self.progress.setValue(value)
         # self._reset_ui_after_download()
+
+    def error_thread(self, value):
+        self.append_log(value, "error")
 
     def stop_download(self):
         self.stopped = True

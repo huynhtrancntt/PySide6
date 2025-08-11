@@ -6,3 +6,7 @@ ffmpeg
 yt-dlp.exe
 yt-dlp\data
 ffmpeg.exe
+update_server/files
+update_server/env
+obf_src
+Update.exe

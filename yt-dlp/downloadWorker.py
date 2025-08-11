@@ -11,6 +11,7 @@ class DownloadVideo(QThread):
     message_signal = Signal(str, str)
     progress_signal = Signal(int)
     finished_signal = Signal()
+    error_signal = Signal(str)
     stop_flag = False
 
     def __init__(self, url, video_index,
@@ -73,7 +74,10 @@ class DownloadVideo(QThread):
                                 text=True, encoding="utf-8", creationflags=creation_flags)
 
         title = result.stdout.strip().replace("/", "-").replace("\\", "-")
-
+        if not title:
+            self.error_signal.emit(
+                f"{message_thread} Internet của bạn có vấn đề. vui lòng check lại!",)
+            return
         self.message_signal.emit(
             f"{message_thread} 🎯 Tiêu đề: {title}", "")
 

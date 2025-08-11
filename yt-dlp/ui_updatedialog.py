@@ -2,9 +2,9 @@
 
 import os
 import sys
-import subprocess
 import webbrowser
-
+import subprocess
+import tempfile
 from ui_downloadUpdateWorker import DownloadUpdateWorker
 from ui_setting import _init_addStyle, resource_path, APP_VERSION
 from PySide6.QtWidgets import (
@@ -34,10 +34,11 @@ class UI_UpdateDialog(QDialog):
         version_box = QFrame()
         version_box.setObjectName("versionBox")
         version_layout = QVBoxLayout(version_box)
-
+        self.version_update = self.update_info['version']
         version_label = QLabel(
             f"<b>🎉 Cập nhật phiên bản mới v{self.update_info['version']}</b>")
         version_label.setStyleSheet("color: #05df60; font-size: 16px;")
+        self.zip_path = ""
         version_old = QLabel(
             f"<span>📱 Phiên bản hiện tại: v{APP_VERSION}</span>")
 
@@ -89,7 +90,7 @@ class UI_UpdateDialog(QDialog):
             notes_text.setMaximumHeight(120)
             layout.addWidget(notes_text)
         self.update_progress_bar = QProgressBar()
-        self.update_progress_bar.setVisible(True)
+        self.update_progress_bar.setVisible(False)
         layout.addStretch()
         layout.addWidget(self.update_progress_bar)
         # self.update_status_label = QLabel("Checking for updates...")
@@ -104,10 +105,32 @@ class UI_UpdateDialog(QDialog):
             QMessageBox.warning(
                 self, "Lỗi", "❌ Không có URL download hợp lệ.\nVui lòng thử tải về thủ công.")
             return
+        app_dir = os.path.dirname(os.path.abspath(sys.executable))
 
-        print(self.update_info['download_url'])
+        # tìm updater_stub cạnh exe khi đóng gói
+        updater_name = "Update.exe" if sys.platform.startswith(
+            "win") else "Update"
+        candidate_paths = [
+            os.path.join(app_dir, updater_name),
+            resource_path(updater_name)
+        ]
+        updater = next((p for p in candidate_paths if os.path.exists(p)), None)
+        # print(f"📌 Updater: {updater}")
+
+        if not updater:
+            QMessageBox.warning(
+                self, "Lỗi", "Không tìm thấy Update.exe trong thư mục")
+            return
+        self.update_progress_bar.setVisible(True)
+        # print(self.update_info['download_url'])
+        # Tải về tự động
+        tmpdir = tempfile.mkdtemp(prefix="upd_")  # Tạo thư mục tạm
+        # Ghép đường dẫn file zip
+        self.zip_path = os.path.join(
+            tmpdir, f"update_v{self.version_update}.zip")
+
         self.download_worker = DownloadUpdateWorker(
-            self.update_info['download_url'], self.update_info['version'])
+            self.update_info['download_url'], self.update_info['version'], self.zip_path)
         self.download_worker.progress_signal.connect(
             self.update_download_progress)
         # self.download_worker.message_signal.connect(self.add_download_log)
@@ -115,51 +138,55 @@ class UI_UpdateDialog(QDialog):
         self.download_worker.start()
 
     def on_download_finished(self, success, message):
-
+        self.update_progress_bar.setVisible(False)
         current_exe_path = sys.executable
 
         app_name = os.path.basename(current_exe_path)
         folder_path = os.path.dirname(current_exe_path)
         download_url = self.update_info['download_url']
         download_file_name = os.path.basename(download_url)
-        output_file = os.path.join(folder_path, "update_info.txt")
-        zip_path = os.path.join(folder_path, download_file_name)
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(f"current_exe_path: {current_exe_path}\n")
-            f.write(f"App Name: {app_name}\n")
-            f.write(f"Folder Path: {folder_path}\n")
-            f.write(f"Download URL: {download_url}\n")
-            f.write(f"Download File Name: {download_file_name}\n")
-            f.write(f"zip_path: {zip_path}\n")
+        # output_file = os.path.join(folder_path, "update_info.txt")
+
+        zip_path = self.zip_path
+        # print(f"zip_path: {self.zip_path}")
+        # with open(output_file, "w", encoding="utf-8") as f:
+        #     f.write(f"current_exe_path: {current_exe_path}\n")
+        #     f.write(f"App Name: {app_name}\n")
+        #     f.write(f"Folder Path: {folder_path}\n")
+        #     f.write(f"Download URL: {download_url}\n")
+        #     f.write(f"Download File Name: {download_file_name}\n")
+        #     f.write(f"zip_path: {zip_path}\n")
 
         if success:
             # self.add_log("✅ Cập nhật thanh cong!")
             QMessageBox.information(self, "Cập nhật",
-                                    f"✅ Cập nhật len phiên bản v{self.update_info['version']} thanh cong!\n\n"
-                                    f"📦 Ứng dụng sẽ tải về và cài đặt cập nhật.\n"
+                                    f"✅ Download phiên bản v{self.update_info['version']} thành công!\n\n"
+                                    f"📦 Ứng dụng sẽ tải về và cài đặt cập nhật.\n\n"
                                     f"⏱️ Quá trình này có thể mất vài phút.")
 
-        app_path = current_exe_path
+        # app_path = current_exe_path
 
-        QMessageBox.information(self, "Cập nhật", f"✅ {current_exe_path}\n\n"
-                                f"📦 {app_name}\n"
-                                f"📦 {folder_path}\n"
-                                f"📦 {download_file_name}\n"
-                                f"📦 {zip_path}\n")
+        # QMessageBox.information(self, "Cập nhật", f"✅ {current_exe_path}\n\n"
+        #                         f"📦 {app_name}\n"
+        #                         f"📦 {folder_path}\n"
+        #                         f"📦 {download_file_name}\n"
+        #                         f"📦 {zip_path}\n")
         # exe_path = sys.argv[0]  # đường dẫn app hiện tại
         app_dir = os.path.dirname(os.path.abspath(current_exe_path))
 
         # tìm updater_stub cạnh exe khi đóng gói
-        updater_name = "updater_stub.exe" if sys.platform.startswith(
-            "win") else "updater_stub"
+        updater_name = "Update.exe" if sys.platform.startswith(
+            "win") else "Update"
         candidate_paths = [
             os.path.join(app_dir, updater_name),
             resource_path(updater_name)
         ]
         updater = next((p for p in candidate_paths if os.path.exists(p)), None)
         if not updater:
-            raise FileNotFoundError(
-                "Không tìm thấy updater_stub cạnh ứng dụng.")
+            os.remove(zip_path)
+            QMessageBox.warning(
+                self, "Lỗi", "Không tìm thấy Update.exe trong cạnh ứng dụng.")
+            return
 
         args = [updater, "--app", current_exe_path, "--zip",
                 zip_path, "--dir", app_dir, "--restart"]

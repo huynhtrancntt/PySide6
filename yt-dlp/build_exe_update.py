@@ -4,21 +4,19 @@ import subprocess
 import sys
 
 # ==== Cấu hình ====
-APP_NAME = "HTDownloader"
-MAIN_FILE = "app.py"       # File entry point
+APP_NAME = "Update"
+MAIN_FILE = "update_tool.py"       # File entry point
 OBF_DIR = "obf_src"                     # Thư mục output mã hoá
-RESOURCE_DIRS = ["images", "assets", "data"]  # Thư mục tài nguyên cần gom
-RESOURCE_FILES = ["Update.exe"]  # File lẻ cần gom
+RESOURCE_DIRS = ["images"]  # Thư mục tài nguyên cần gom
+RESOURCE_FILES = []  # File lẻ cần gom
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 UPX_PATH = fr"D:\Dev\python\upx-5.0.2-win64\upx.exe"  # đường dẫn file upx.ex
 # hoặc os.path.join(BASE_DIR, "images", "icon.ico")
-icon_path = os.path.join("images", "icon.ico")
+icon_path = os.path.join("images", "update.ico")
 
-RESOURCE_FILES_PY = ["ui_setting.py", "downloadWorker.py", "ui_updatedialog.py",
-                     "ui_checkupdate.py", "ui_downloadUpdateWorker.py", "license_manager.py"]
+RESOURCE_FILES_PY = []
 
-Import_hidden = ['subprocess', 'requests', 'webbrowser', 'Cryptodome.Cipher.AES',
-                 'PySide6.QtCore', 'PySide6.QtWidgets', 'PySide6.QtGui']
+Import_hidden = []
 
 
 def run_cmd(cmd):
@@ -40,8 +38,7 @@ def clean_old_builds():
 
 def encrypt_code():
     """Mã hoá code Python bằng PyArmor"""
-    cmd = f"pyarmor gen -O {OBF_DIR} {MAIN_FILE} " + \
-        " ".join(RESOURCE_FILES_PY)
+    cmd = f"pyarmor gen -O {OBF_DIR} {MAIN_FILE}"
 
     run_cmd(cmd)
 
@@ -104,14 +101,14 @@ def build_exe():
 
     # Hidden imports
 
-    for import_hidden in Import_hidden:
-        add_data_args.append(f'--hidden-import={import_hidden}')
+    # for import_hidden in Import_hidden:
+    #     add_data_args.append(f'--hidden-import={import_hidden}')
 
     # Build
     cmd = (
         f'cd {OBF_DIR} && '
         # f'pyinstaller --onedir --noconsole --noconfirm --clean '
-        f'pyinstaller --onefile --noconsole --noconfirm --clean '
+        f'pyinstaller --onefile  --clean '
         f'--name {APP_NAME} '
         f'--icon={icon_path} '  # Icon,  # Thêm icon cho executable
         f'{" ".join(add_data_args)} '
