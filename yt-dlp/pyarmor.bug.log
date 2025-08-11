@@ -1,0 +1,12 @@
+[BUG]: no found input "ui_setting.py;ui_setting.py downloadWorker.py;downloadWorker.py"
+
+## Command Line
+D:\Dev\python\PySide6\yt-dlp\venv\Scripts\pyarmor gen -O obf_src app.py ui_setting.py;ui_setting.py downloadWorker.py;downloadWorker.py ui_updatedialog.py;ui_updatedialog.py ui_checkupdate.py;ui_checkupdate.py ui_downloadUpdateWorker.py;ui_downloadUpdateWorker.py
+
+## Environments
+Python 3.10.0
+Pyarmor 9.1.8 (trial), 000000, non-profits
+Platform windows.x86_64
+Native windows.amd64
+Home C:\Users\HT\.pyarmor
+

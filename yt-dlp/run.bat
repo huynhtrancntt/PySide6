@@ -9,6 +9,7 @@ echo 🔍 Đang kiểm tra môi trường ảo...
 if not exist venv (
     echo ❗ Chưa có môi trường ảo. Đang tạo venv...
     python -m venv venv
+   
 )
 
 if exist venv\Scripts\activate.bat (

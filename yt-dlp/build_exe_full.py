@@ -14,6 +14,12 @@ UPX_PATH = fr"D:\Dev\python\upx-5.0.2-win64\upx.exe"  # đường dẫn file upx
 # hoặc os.path.join(BASE_DIR, "images", "icon.ico")
 icon_path = os.path.join("images", "icon.ico")
 
+RESOURCE_FILES_PY = ["ui_setting.py", "downloadWorker.py", "ui_updatedialog.py",
+                     "ui_checkupdate.py", "ui_downloadUpdateWorker.py", "license_manager.py"]
+
+Import_hidden = ['subprocess', 'requests', 'webbrowser', 'Cryptodome.Cipher.AES',
+                 'PySide6.QtCore', 'PySide6.QtWidgets', 'PySide6.QtGui']
+
 
 def run_cmd(cmd):
     """Chạy lệnh và in log"""
@@ -34,9 +40,12 @@ def clean_old_builds():
 
 def encrypt_code():
     """Mã hoá code Python bằng PyArmor"""
-    os.chdir(PROJECT_DIR)
-    run_cmd(
-        f"pyarmor gen -O {OBF_DIR} {MAIN_FILE} ui_setting.py downloadWorker.py")
+    cmd = f"pyarmor gen -O {OBF_DIR} {MAIN_FILE} " + \
+        " ".join(RESOURCE_FILES_PY)
+
+    run_cmd(cmd)
+
+    print("✅ Hoàn tất! Mã hoá code Python bằng PyArmor")
 
 
 def copy_resources_into_obf():
@@ -85,20 +94,18 @@ def build_exe():
                 f'--add-data "{res_file}{os.pathsep}{res_file}"')
             print(f"➕ Sẽ gom file: {res_file}")
 
+    for res_file_py in RESOURCE_FILES_PY:
+        src_path = os.path.join(OBF_DIR, res_file_py)
+        if os.path.exists(src_path):
+            # Bỏ đuôi .py nếu có
+            module_name = os.path.splitext(res_file_py)[0]
+            add_data_args.append(f'--hidden-import={module_name}')
+            print(f"➕ Sẽ gom hidden-import: {module_name}")
+
     # Hidden imports
-    add_data_args += [
-        '--hidden-import=ui_setting',
-        '--hidden-import=downloadWorker',
-        '--hidden-import=subprocess',
-        '--hidden-import=PySide6.QtCore',
-        '--hidden-import=PySide6.QtWidgets',
-        '--hidden-import=PySide6.QtGui',
-        # '--collect-submodules PySide6.QtCore'
-        # '--collect-submodules PySide6.QtWidgets'
-        # '--collect-submodules PySide6.QtGui'
-        # '--hidden-import=PySide6.QtGui',
-        # '--collect-all PySide6'
-    ]
+
+    for import_hidden in Import_hidden:
+        add_data_args.append(f'--hidden-import={import_hidden}')
 
     # Build
     cmd = (
@@ -110,6 +117,7 @@ def build_exe():
         f'{" ".join(add_data_args)} '
         f'{MAIN_FILE}'
     )
+    print(cmd)
     run_cmd(cmd)
 
 

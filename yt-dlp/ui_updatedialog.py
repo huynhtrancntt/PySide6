@@ -6,14 +6,11 @@ import subprocess
 import webbrowser
 
 from ui_downloadUpdateWorker import DownloadUpdateWorker
-from ui_setting import _init_addStyle, resource_path
+from ui_setting import _init_addStyle, resource_path, APP_VERSION
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QPushButton, QTextEdit, QMessageBox,
-    QProgressBar, QHBoxLayout, QApplication, QFrame
+    QProgressBar, QHBoxLayout, QFrame
 )
-from PySide6.QtCore import QTimer, Signal, QObject
-# Phiên bản ứng dụng
-APP_VERSION = "1.0.0"  # Placeholder for actual version, replace with
 
 
 class UI_UpdateDialog(QDialog):
@@ -187,11 +184,3 @@ class UI_UpdateDialog(QDialog):
         #     self.update_status_label.setText(f"⬇️ Đang tải về... {value}%")
         # else:
         #     self.update_status_label.setText(f"📦 Đang cài đặt... {value}%")
-
-
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-
-#     window = UI_UpdateDialog)
-#     window.show()
-#     sys.exit(app.exec())

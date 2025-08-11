@@ -1,13 +1,14 @@
 from PySide6.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QTextEdit,
-    QVBoxLayout, QHBoxLayout, QComboBox, QTabWidget, QFormLayout, QListWidget, QGroupBox, QCheckBox, QFileDialog, QProgressBar, QMessageBox, QListWidgetItem
+    QVBoxLayout, QHBoxLayout, QComboBox, QTabWidget, QFormLayout, QListWidget, QGroupBox, QCheckBox, QFileDialog, QProgressBar, QMessageBox, QListWidgetItem, QMenuBar
 )
-from PySide6.QtCore import Qt, Signal, QThread, QTime, QTimer
-from PySide6.QtGui import QColor, QIcon
-from ui_setting import show_about_ui, _init_addStyle, resource_path
-
+from PySide6.QtCore import Signal, QTime, QTimer
+from PySide6.QtGui import QColor, QIcon, QAction
+from ui_setting import APP_VERSION, show_about_ui, _init_addStyle, resource_path
+from ui_checkupdate import UI_CheckUpdate
+from ui_updatedialog import UI_UpdateDialog
 from downloadWorker import DownloadVideo
-
+from license_manager import check_license, create_license
 import os
 import subprocess
 # from ui_updatedialog import UI_UpdateDialog
@@ -18,8 +19,9 @@ import sys
 class Tab_1(QWidget):
     progress_update = Signal(int, str)
 
-    def __init__(self,  log_widget, output_list, progress):
+    def __init__(self, append_log,  log_widget, output_list, progress, tab_name="Tab 1"):
         super().__init__()
+        self.append_log = append_log
         self.worker = None
         # Thread
         self.index = 1
@@ -37,7 +39,8 @@ class Tab_1(QWidget):
         # self.progress.setVisible(False)
         self.progress.setValue(0)  # Thiết lập giá trị ban đầu
         self.progress.hide()  # Hiện progress_bar khi bắt đầu
-        self.append_log("Đang sử dụng tab cài đặt chung ")
+        self.append_log(
+            f"Đang sử dung tab {tab_name}")
         layout = QVBoxLayout()
 
         # Nhập URL
@@ -216,12 +219,13 @@ class Tab_1(QWidget):
         self.stop_button.setEnabled(True)
         self.progress.show()
         self.progress.setValue(0)
+
         self.append_log("🚀 Bắt đầu tải video...")
         self.index = 1
         self.active_threads.clear()
         self.running = 0
         self.custom_folder_name = custom_folder
-        self.video_mode = 0
+        self.video_mode = self.type_video.currentText()
 
         self.audio_only_flag = self.audio_only.isChecked()
         self.sub_mode_flag = selected_sub_mode
@@ -364,21 +368,6 @@ class Tab_1(QWidget):
         # self.progress.setVisible(True)
         self.download_button.setEnabled(True)
 
-    def append_log(self, message, level=""):
-        current_time = QTime.currentTime().toString("HH:mm:ss")
-        message = f"[{current_time}] {message}"
-        item = QListWidgetItem(message)
-        if level == "info":
-            item.setForeground(QColor("green"))
-        elif level == "warning":
-            item.setForeground(QColor("orange"))
-        elif level == "error":
-            item.setForeground(QColor("red"))
-        elif level == "blue":
-            item.setForeground(QColor("#4a5568"))
-        self.output_list.addItem(item)
-        self.output_list.scrollToBottom()
-
 
 class TranslateTab(QWidget):
     def __init__(self):
@@ -416,12 +405,20 @@ class MainWindow(QWidget):
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         _init_addStyle(self)
+        self.is_manual_check = False
+        self.version = APP_VERSION  # Placeholder for server connection
         self._init_ui()
 
     def _init_ui(self):
-        self.layout = QVBoxLayout(self)
-        self.tabs = QTabWidget()
 
+        # Layout chính
+        self.layout = QVBoxLayout(self)
+
+        # Layout gom Tabs + Log + Progress
+        self.main_content_layout = QVBoxLayout()
+
+        # Tabs
+        self.tabs = QTabWidget()
         self.tabs.setMovable(True)
 
         # Log widget
@@ -429,22 +426,60 @@ class MainWindow(QWidget):
         self.layout_log = QVBoxLayout(self.log_widget)
         self.output_list = QListWidget()
         self.output_list.setObjectName("logListWidget")
-        # self.output_list.setWordWrap(True)
         self.layout_log.addWidget(QLabel("📝 Nhật ký hoạt động"))
         self.layout_log.addWidget(self.output_list)
 
+        # Progress bar
         self.progress = QProgressBar()
         self.progress.setObjectName("progressBar")
-        self.progress.setRange(0, 100)  # Thiết lập phạm vi từ
-        self.progress.setVisible(False)  # Ban đầu ẩn thanh tiến trình
+        self.progress.setRange(0, 100)
+        self.progress.setVisible(False)
+
+        # Thêm Tab
         self.tabs.addTab(
-            Tab_1(self.log_widget, self.output_list, self.progress), "Cài đặt chung")
+            Tab_1(self.append_log,
+                  self.log_widget,
+                  self.output_list,
+                  self.progress,
+                  "Video Downloader"),
+            "Video Downloader"
+        )
         self.tabs.addTab(TranslateTab(), "Dịch Văn bản / Prompt Tùy chỉnh")
 
-        self.layout.addWidget(self.tabs)
+        # Gom Tabs + Log + Progress vào chung layout
+        self.main_content_layout.addWidget(self.tabs)
         self._ui_session_manager_key()
-        self.layout.addWidget(self.log_widget)
-        self.layout.addWidget(self.progress)
+        self.main_content_layout.addWidget(self.log_widget)
+        self.main_content_layout.addWidget(self.progress)
+        # self.main_content_layout.addWidget(
+        #
+        # )
+        # self._ui_session_manager_key()
+        # Thêm menu(nếu muốn menu bar nằm trên cùng)
+        # Tạo menu bar
+        self.menu_bar = QMenuBar()
+
+        # Menu File
+        file_menu = self.menu_bar.addMenu("📂 File")
+        file_menu.addAction("Thoát")
+
+        # Menu Help
+        help_menu = self.menu_bar.addMenu("❓ Help")
+        update_action = QAction("🔄 Check for Updates", self)
+        update_action.triggered.connect(self.show_update_dialog)
+        help_menu.addAction(update_action)
+
+        # Gán menu bar vào layout chính
+        self.layout.setMenuBar(self.menu_bar)
+
+        # Thêm layout gom vào layout chính
+        self.layout.addLayout(self.main_content_layout)
+        self._start_update_check()
+        # Gọi hàm xử lý key
+
+    def show_update_dialog(self):
+        self.is_manual_check = True
+        self._start_update_check()
 
     def _ui_session_manager_key(self):
         # QGroupBox "Quản lý License"
@@ -483,11 +518,90 @@ class MainWindow(QWidget):
         wrapper_layout.addWidget(self.group_box)
 
         # Thêm vào layout chính
-        self.layout.addWidget(wrapper_widget)
+        self.main_content_layout.addWidget(wrapper_widget)
+
+        self.group_box.setVisible(True)
+        if __import__("os").path.exists("license.lic"):
+            # self.group_box.setVisible(True)
+            status, data = check_license()
+            print(status, data)
+            if status:
+                self.group_box.setVisible(False)
+            else:
+                self.append_log(
+                    f"⚠️ Bản quyền không hợp lệ, vui lòng kích hoạt lại", "warning")
+
+        # print(data)  # data lúc này là chuỗi báo lỗi
+
+    def _start_update_check(self):
+        self.update_checker = UI_CheckUpdate()
+        self.update_checker.update_available.connect(
+            self._on_update_available)
+        self.update_checker.error_occurred.connect(
+            lambda error: QMessageBox.critical(self, "Lỗi", f"Có lỗi xảy ra khi kiểm tra cập nhật:\n{error}"))
+        self.update_checker.no_update.connect(
+            lambda: self._on_no_update())
+        self.update_checker.start()
+
+    def _on_update_available(self, update_info):
+        # self.output_list.addItem("📥 Cập nhật có sẵn:")
+
+        # version = update_info.get('version', '1.0.0')
+        # version_name = update_info.get('name', 'Phiên bản mẫu')
+
+        # # self.version_label.setText(
+        # #     f"<b>🎉 Cập nhật phiên bản mới v{version}</b>")
+        # # self.version_name.setText(
+        # #     f"<span>📋 Tên phiên bản: {version_name}</span>")
+        dialog = UI_UpdateDialog(update_info, self)
+        dialog.exec()
+
+        # Hiển thị box phiên bản khi có update
+        # self.version_box.setVisible(True)
+    def _on_no_update(self):
+        """Xử lý khi không có update"""
+
+        if self.is_manual_check:
+            # Chỉ hiển thị MessageBox khi check thủ công, không hiển thị khi auto-check
+            QMessageBox.information(
+                self, "Thông báo", f"✅ Bạn đang sử dụng phiên bản mới nhất (v{self.version})")
+            # Reset flag sau khi xử lý
+            # self.is_manual_check = False
+
+        else:
+            #    # Khi auto-check, chỉ hiển thị trong log
+            self.append_log(
+                "✅ Phiên bản hiện tại là mới nhất (auto-check)", "info"
+            )
 
     def apply_manager_key(self):
+
         if self.input_code.text() == "HTPRO":
-            self.group_box.hide()
+            create_license()
+            if __import__("os").path.exists("license.lic"):
+                status, data = check_license()
+                if not status:
+                    self.group_box.setVisible(True)
+                else:
+                    self.group_box.setVisible(False)
+        else:
+            QMessageBox.warning(
+                self, "Thông báo", "Sai mã kích hoạt")
+
+    def append_log(self, message, level=""):
+        current_time = QTime.currentTime().toString("HH:mm:ss")
+        message = f"[{current_time}] {message}"
+        item = QListWidgetItem(message)
+        if level == "info":
+            item.setForeground(QColor("#05df60"))
+        elif level == "warning":
+            item.setForeground(QColor("orange"))
+        elif level == "error":
+            item.setForeground(QColor("red"))
+        elif level == "blue":
+            item.setForeground(QColor("#4a5568"))
+        self.output_list.addItem(item)
+        self.output_list.scrollToBottom()
 
 
 if __name__ == "__main__":

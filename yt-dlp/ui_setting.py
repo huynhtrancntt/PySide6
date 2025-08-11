@@ -5,7 +5,7 @@ import os
 
 # Version of the application
 UPDATE_CHECK_URL = "https://raw.githubusercontent.com/huynhtrancntt/auto_update/main/update.json"
-APP_VERSION = "1.2.0"  # Placeholder for actual version, replace with your app's version
+APP_VERSION = "1.1.0"  # Placeholder for actual version, replace with your app's version
 ABOUT_TEMPLATE = """
 <h3>🎬 HT DownloadVID v{version}</h3>
 <p><b>Ứng dụng download video và phụ đề</b></p>

@@ -78,27 +78,32 @@ class DownloadVideo(QThread):
             f"{message_thread} 🎯 Tiêu đề: {title}", "")
 
         output_filename = f"{self.video_index:02d}.{title}.%(ext)s"
+        if self.video_mode == "Video":
+            output_filename = f"{self.video_index:02d}.{title}.%(ext)s"
+        else:
+            output_filename = f"playlist.{self.video_index:02d}.{title}.%(ext)s"
 
         output_filename = os.path.join(
             self.custom_folder_name, output_filename)
 
-        download_cmd = [
-            ytdlp_path, "--encoding", "utf-8", self.url,
-            "--newline",
-            "--progress", "--write-auto-sub", "--sub-langs", "vi",
-            "--sub-format", "srt/best", "--convert-subs", "srt",
-            "-f", "bv*+ba/b", "--merge-output-format", "mp4",
-            "--output", output_filename, "--extract-audio",
-            "--audio-format", "mp3", "--write-thumbnail",
-            "--ignore-errors", "--no-warnings"
-        ]
-
+        # download_cmd = [
+        #     ytdlp_path, "--encoding", "utf-8", self.url,
+        #     "--newline",
+        #     "--progress", "--write-auto-sub", "--sub-langs", "vi",
+        #     "--sub-format", "srt/best", "--convert-subs", "srt",
+        #     "-f", "bv*+ba/b", "--merge-output-format", "mp4",
+        #     "--output", output_filename, "--extract-audio",
+        #     "--audio-format", "mp3", "--write-thumbnail",
+        #     "--ignore-errors", "--no-warnings"
+        # ]
+        download_cmd = self._build_command(ytdlp_path, output_filename)
         self.process = subprocess.Popen(
             download_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
+            encoding="utf-8",
             creationflags=creation_flags
         )
 
@@ -127,6 +132,52 @@ class DownloadVideo(QThread):
         self.message_signal.emit(
             f"{message_thread} ✅ Xong: {video_filename}", "")
         self.finished_signal.emit()
+
+    def _build_command(self, ytdlp_path, output):
+        """Xây dựng lệnh yt-dlp"""
+        cmd = [ytdlp_path]
+        cmd += ["--encoding", "utf-8"]
+        cmd += [self.url, "--progress"]
+        # Thêm đường dẫn ffmpeg nếu tồn tại
+        if os.path.exists(self.ffmpeg_path):
+            cmd += ["--ffmpeg-location", self.ffmpeg_path]
+
+        if self.subtitle_only:
+            cmd.append("--skip-download")
+            self.message.emit("📝 Chế độ: Chỉ tải phụ đề")
+        else:
+            cmd += ["-f", "bv*+ba/b", "--merge-output-format", "mp4"]
+
+        cmd += ["-o", output]
+
+        if self.audio_only and not self.subtitle_only:
+            cmd += ["--extract-audio", "--audio-format", "mp3"]
+
+        # Xử lý phụ đề
+        if self.sub_mode != "":
+            if self.sub_mode == "1":
+                cmd += ["--write-subs", "--sub-langs", self.sub_lang]
+                # self.message.emit(
+                #     f"🔤 Tải phụ đề chính thức cho ngôn ngữ: {lang_display}")
+            elif self.sub_mode == "2":
+                cmd += ["--write-auto-subs", "--sub-langs", self.sub_lang]
+                # self.message.emit(
+                #     f"🤖 Tải phụ đề tự động cho ngôn ngữ: {lang_display}")
+
+            # Thêm các tùy chọn để đảm bảo tải được phụ đề
+            cmd += [
+                "--ignore-errors",           # Bỏ qua lỗi nếu một ngôn ngữ không có
+                "--no-warnings",            # Không hiển thị cảnh báo
+                "--sub-format", "srt/best"  # Ưu tiên định dạng SRT
+            ]
+
+        cmd += ["--convert-subs", "srt"]
+
+        if self.include_thumb:
+            cmd.append("--write-thumbnail")
+
+        # print(cmd)
+        return cmd
 
     # def _update_progress_from_line(self, line):
     #     """Cập nhật progress từ output line"""
