@@ -10,3 +10,6 @@ update_server/files
 update_server/env
 obf_src
 Update.exe
+build_onedir/
+env/
+venv

@@ -1,0 +1,4 @@
+PySide6
+deep-translator
+langdetect
+pyttsx3

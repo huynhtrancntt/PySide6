@@ -478,7 +478,11 @@ class MainWindow(QWidget):
         # Thêm layout gom vào layout chính
         self.layout.addLayout(self.main_content_layout)
         self._start_update_check()
-        # Gọi hàm xử lý key
+
+        self.ytdlp_path = resource_path(os.path.join("data", "yt-dlp.exe"))
+        self.ytdlp_path_1 = resource_path("data\yt-dlp.exe")
+        self.append_log(f"📂 yt-dlp.exe path: {self.ytdlp_path}")
+        self.append_log(f"📂 yt-dlp.exe path: {self.ytdlp_path_1}")
 
     def show_update_dialog(self):
         self.is_manual_check = True

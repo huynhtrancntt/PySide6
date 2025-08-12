@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import QMessageBox
 import sys
 import os
-
+from pathlib import Path
 # Version of the application
 UPDATE_CHECK_URL = "https://raw.githubusercontent.com/huynhtrancntt/auto_update/main/update.json"
 APP_VERSION = "1.6.0"  # Placeholder for actual version, replace with your app's version
@@ -26,14 +26,14 @@ ABOUT_TEMPLATE = """
 """
 
 
-def resource_path(relative_path):
-    """Trả về đường dẫn chính xác đến resource khi chạy exe hoặc script"""
-    try:
-        base_path = sys._MEIPASS  # PyInstaller
-    except AttributeError:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
+def resource_path(rel: str) -> str:
+    if hasattr(sys, "_MEIPASS"):         # PyInstaller
+        base = Path(sys._MEIPASS)
+    elif "__compiled__" in globals():     # Nuitka onefile
+        base = Path(os.path.dirname(sys.argv[0]))
+    else:
+        base = Path(os.path.abspath("."))
+    return str(base / rel)
 
 
 def show_about_ui(self):

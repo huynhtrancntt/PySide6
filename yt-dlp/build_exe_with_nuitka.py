@@ -2,121 +2,174 @@ import os
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 # ==== Cấu hình ====
 APP_NAME = "HTDownloader"
-MAIN_FILE = "app.py"
-OBF_DIR = "obf_src"
-RESOURCE_DIRS = ["images", "assets", "data"]
-RESOURCE_FILES = ["Update.exe"]
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-ICON_PATH = os.path.join("images", "icon.ico")
+MAIN_FILE = "app.py"                     # Entry point
+RESOURCE_DIRS = []                       # Thư mục tài nguyên (src=dst)
+RESOURCE_FILES = []                      # File lẻ ở root dự án (src=dst)
+ICON_PATH = Path("images/icon.ico")
+# để trống nếu không dùng
+UPX_PATH = Path(r"D:\Dev\python\upx-5.0.2-win64\upx.exe")
 
-RESOURCE_FILES_PY = [
-    "ui_setting.py", "downloadWorker.py", "ui_updatedialog.py",
-    "ui_checkupdate.py", "ui_downloadUpdateWorker.py", "license_manager.py"
+# Nếu bạn dùng pycryptodomex -> 'Cryptodome.*'
+# Nếu bạn dùng pycryptodome  -> 'Crypto.*'
+HIDDEN_MODULES = [
+    "subprocess", "requests", "webbrowser", "uuid",
+    "PySide6.QtCore", "PySide6.QtWidgets", "PySide6.QtGui",
+    "Cryptodome.Cipher.AES",
 ]
 
-IMPORT_HIDDEN = [
-    'subprocess', 'requests', 'webbrowser', 'Cryptodome.Cipher.AES',
-    'PySide6.QtCore', 'PySide6.QtWidgets', 'PySide6.QtGui'
+# Các file chắc chắn phải có trong gói (src_rel, dst_rel)
+EXTRA_FILES = [
+    ("data/yt-dlp.exe", "data/yt-dlp.exe"),
+    ("data/ffmpeg.exe", "data/ffmpeg.exe"),
+    ("images/icon.ico", "images/icon.ico"),
 ]
 
-MPRESS_PATH = r"C:\tools\mpress\mpress.exe"  # nếu không dùng thì để None
+# ==== Đường dẫn chuẩn ====
+PROJECT_DIR = Path(__file__).resolve().parent
+BUILD_DIR = PROJECT_DIR / "build_onedir"
+DIST_DIR = PROJECT_DIR / "dist"
+DIST_DIR.mkdir(exist_ok=True)
 
 
-def run_cmd(cmd):
-    print(f"▶ {cmd}")
-    result = subprocess.run(cmd, shell=True)
-    if result.returncode != 0:
-        sys.exit(f"❌ Lỗi khi chạy: {cmd}")
+def run_cmd(args, cwd=None, check=True):
+    print("▶", " ".join(map(str, args)))
+    r = subprocess.run(args, cwd=cwd)
+    if check and r.returncode != 0:
+        sys.exit(r.returncode)
+
+
+def ensure_tools():
+    run_cmd([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+    run_cmd([sys.executable, "-m", "pip", "install",
+             "--upgrade", "nuitka", "ordered-set", "zstandard"])
 
 
 def clean_old_builds():
-    for folder in [OBF_DIR, "dist", "build"]:
-        folder_path = os.path.join(PROJECT_DIR, folder)
-        if os.path.exists(folder_path):
-            shutil.rmtree(folder_path)
-            print(f"🧹 Đã xoá {folder_path}")
+    if BUILD_DIR.exists():
+        shutil.rmtree(BUILD_DIR)
+        print(f"🧹 Đã xoá {BUILD_DIR}")
+    out_dir = DIST_DIR / APP_NAME
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+        print(f"🧹 Đã xoá {out_dir}")
+    DIST_DIR.mkdir(exist_ok=True)
 
 
-def encrypt_code():
-    cmd = f"pyarmor gen -O {OBF_DIR} {MAIN_FILE} " + \
-        " ".join(RESOURCE_FILES_PY)
-    run_cmd(cmd)
-    print("✅ Hoàn tất! Mã hoá code Python bằng PyArmor")
+def build_with_nuitka():
+    cmd = [
+        sys.executable, "-m", "nuitka",
+        MAIN_FILE,
+        "--standalone",                   # build onedir
+        "--output-dir=" + str(BUILD_DIR),
+        f"--output-filename={APP_NAME}.exe",
+        "--assume-yes-for-downloads",
+        "--nofollow-import-to=pytest",
+        "--remove-output",
+        "--enable-plugin=pyside6",        # PySide6
+        "--windows-console-mode=disable",  # ẩn console
+    ]
 
-
-def copy_resources_into_obf():
-    obf_abs = os.path.join(PROJECT_DIR, OBF_DIR)
-    os.makedirs(obf_abs, exist_ok=True)
-
-    for res_dir in RESOURCE_DIRS:
-        src_dir = os.path.join(PROJECT_DIR, res_dir)
-        dst_dir = os.path.join(obf_abs, res_dir)
-        if os.path.isdir(src_dir):
-            if os.path.exists(dst_dir):
-                shutil.rmtree(dst_dir)
-            shutil.copytree(src_dir, dst_dir)
-            print(f"📁 Đã copy thư mục tài nguyên: {res_dir}")
-
-    for res_file in RESOURCE_FILES:
-        src_file = os.path.join(PROJECT_DIR, res_file)
-        dst_file = os.path.join(obf_abs, res_file)
-        if os.path.isfile(src_file):
-            shutil.copy2(src_file, dst_file)
-            print(f"📄 Đã copy file tài nguyên: {res_file}")
-
-
-def build_exe_with_nuitka():
-    copy_resources_into_obf()
-
-    add_data_args = []
-    for res_dir in RESOURCE_DIRS:
-        src_path = os.path.join(OBF_DIR, res_dir)
-        if os.path.exists(src_path):
-            add_data_args.append(f'--include-data-dir={src_path}={res_dir}')
-
-    for res_file in RESOURCE_FILES:
-        src_path = os.path.join(OBF_DIR, res_file)
-        if os.path.exists(src_path):
-            add_data_args.append(f'--include-data-file={src_path}={res_file}')
-
-    for res_file_py in RESOURCE_FILES_PY:
-        module_name = os.path.splitext(res_file_py)[0]
-        add_data_args.append(f'--include-module={module_name}')
-
-    for hidden in IMPORT_HIDDEN:
-        add_data_args.append(f'--include-module={hidden}')
-
-    icon_arg = f'--windows-icon-from-ico="{ICON_PATH}"' if os.path.exists(
-        ICON_PATH) else ""
-
-    cmd = (
-        f'python -m nuitka --onefile --windows-disable-console '
-        f'--output-filename={APP_NAME}.exe '
-        f'{icon_arg} '
-        f'{" ".join(add_data_args)} '
-        f'{os.path.join(OBF_DIR, MAIN_FILE)}'
-    )
-
-    run_cmd(cmd)
-    print("✅ Hoàn tất build EXE bằng Nuitka")
-
-
-def compress_with_mpress():
-    exe_path = os.path.join(PROJECT_DIR, f"{APP_NAME}.exe")
-    if MPRESS_PATH and os.path.isfile(MPRESS_PATH) and os.path.exists(exe_path):
-        cmd = f'"{MPRESS_PATH}" -s -q "{exe_path}"'
-        run_cmd(cmd)
-        print("✅ Đã nén exe bằng MPRESS")
+    # Icon
+    if ICON_PATH and ICON_PATH.is_file():
+        cmd.append(f"--windows-icon-from-ico={ICON_PATH}")
     else:
-        print("⚠ MPRESS không khả dụng, bỏ qua bước nén.")
+        print("⚠ Không thấy icon, bỏ qua.")
+
+    # Hidden modules
+    for m in HIDDEN_MODULES:
+        cmd.append(f"--include-module={m}")
+
+    # Thư mục tài nguyên
+    for d in RESOURCE_DIRS:
+        src = PROJECT_DIR / d
+        if src.is_dir():
+            cmd.append(f"--include-data-dir={src}={d}")
+            print(f"➕ include dir: {src} -> {d}")
+
+    # File lẻ ở root
+    for f in RESOURCE_FILES:
+        src = PROJECT_DIR / f
+        if src.is_file():
+            cmd.append(f"--include-data-files={src}={f}")
+            print(f"➕ include file: {src} -> {f}")
+
+    # File bắt buộc (.exe, icon, …)
+    for src_rel, dst_rel in EXTRA_FILES:
+        src_abs = PROJECT_DIR / src_rel
+        if not src_abs.exists():
+            print(f"⚠ Bỏ qua (không thấy): {src_abs}")
+            continue
+        cmd.append(f"--include-data-files={src_abs}={dst_rel}")
+        print(f"🧩 include file: {src_abs} -> {dst_rel}")
+
+    # assets.txt (nếu có)
+    assets_file = PROJECT_DIR / "assets.txt"
+    if assets_file.is_file():
+        for raw in assets_file.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                src_rel2, dst_rel2 = map(str.strip, line.split("=", 1))
+            else:
+                src_rel2, dst_rel2 = line, line
+            src_abs2 = PROJECT_DIR / src_rel2
+            if src_abs2.is_file():
+                cmd.append(f"--include-data-files={src_abs2}={dst_rel2}")
+                print(f"🧩 include (assets file): {src_abs2} -> {dst_rel2}")
+            elif src_abs2.is_dir():
+                cmd.append(f"--include-data-dir={src_abs2}={dst_rel2}")
+                print(f"🧩 include (assets dir):  {src_abs2} -> {dst_rel2}")
+
+    run_cmd(cmd)
+
+
+def compress_with_upx_in_dir(target_dir: Path):
+    """Nén tất cả file .exe và .pyd trong thư mục build bằng UPX"""
+    upx = None
+    if str(UPX_PATH):
+        p = Path(UPX_PATH)
+        if p.is_file():
+            upx = str(p)
+    if not upx:
+        found = shutil.which("upx")
+        if found:
+            upx = found
+
+    if not upx:
+        print("⚠ Không tìm thấy UPX, bỏ qua nén.")
+        return
+
+    for file in target_dir.rglob("*"):
+        if file.suffix.lower() in [".exe", ".pyd", ".dll"]:
+            run_cmd([upx, "--best", "--lzma", "--force", str(file)])
+    print("✅ Đã nén toàn bộ exe/pyd/dll với UPX")
+
+
+def copy_final_to_dist():
+    """Copy cả thư mục onedir sang dist/"""
+    build_out = BUILD_DIR / APP_NAME.dist_suffixless
+    # với Nuitka onedir, thư mục output nằm trong BUILD_DIR, tên trùng APP_NAME + ".dist"
+    for sub in BUILD_DIR.iterdir():
+        if sub.is_dir() and sub.name.startswith(APP_NAME):
+            build_out = sub
+            break
+
+    final_dir = DIST_DIR / APP_NAME
+    if final_dir.exists():
+        shutil.rmtree(final_dir)
+    shutil.copytree(build_out, final_dir)
+    print(f"📦 Thư mục cuối: {final_dir}")
 
 
 if __name__ == "__main__":
+    # ensure_tools()   # bật nếu muốn auto-cài lib build
     clean_old_builds()
-    encrypt_code()
-    build_exe_with_nuitka()
-    # compress_with_mpress()
-    print(f"✅ Hoàn tất! File EXE: {APP_NAME}.exe")
+    build_with_nuitka()
+    # compress_with_upx_in_dir(BUILD_DIR)   # nếu muốn nén
+    copy_final_to_dist()
+    print("✅ Xong! Xem thư mục dist/ để lấy bản build")

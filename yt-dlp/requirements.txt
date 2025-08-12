@@ -1,5 +1,9 @@
 PySide6>=6.5.0
 requests
 pyarmor
-PyInstaller
+# PyInstaller
 pycryptodomex
+nuitka 
+ordered-set 
+zstandard
+deep-translator
