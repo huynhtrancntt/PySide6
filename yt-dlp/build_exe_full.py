@@ -15,10 +15,10 @@ UPX_PATH = fr"D:\Dev\python\upx-5.0.2-win64\upx.exe"  # đường dẫn file upx
 icon_path = os.path.join("images", "icon.ico")
 
 RESOURCE_FILES_PY = ["ui_setting.py", "downloadWorker.py", "ui_updatedialog.py",
-                     "ui_checkupdate.py", "ui_downloadUpdateWorker.py", "license_manager.py"]
+                     "ui_checkupdate.py", "ui_downloadUpdateWorker.py", "license_utils.py"]
 
 Import_hidden = ['subprocess', 'requests', 'webbrowser', 'Cryptodome.Cipher.AES',
-                 'PySide6.QtCore', 'PySide6.QtWidgets', 'PySide6.QtGui']
+                 'PySide6.QtCore', 'PySide6.QtWidgets', 'PySide6.QtGui', 'uuid']
 
 
 def run_cmd(cmd):

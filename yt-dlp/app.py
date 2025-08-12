@@ -8,12 +8,11 @@ from ui_setting import APP_VERSION, show_about_ui, _init_addStyle, resource_path
 from ui_checkupdate import UI_CheckUpdate
 from ui_updatedialog import UI_UpdateDialog
 from downloadWorker import DownloadVideo
-from license_manager import check_license, create_license
 import os
 import subprocess
-# from ui_updatedialog import UI_UpdateDialog
 from datetime import datetime
 import sys
+import license_utils as lu
 
 
 class Tab_1(QWidget):
@@ -488,20 +487,33 @@ class MainWindow(QWidget):
     def _ui_session_manager_key(self):
         # QGroupBox "Quản lý License"
         self.group_box = QGroupBox("Quản lý License")
-
         group_layout = QVBoxLayout()
 
         # Thông tin license
         info_label = QLabel("""
             <b>Trạng thái License:</b> ✅ Hợp lệ |
             <b>Loại:</b> HTPRO |
-            <b>Hết hạn:</b> 2025-08-11 |
-            <b>Lượt còn:</b> 200
+            <b>Hết hạn:</b> Vĩnh viễn
         """)
         info_label.setWordWrap(True)
         group_layout.addWidget(info_label)
 
-        # Input + nút kích hoạt
+        # Ô nhập HWID
+        input_hwid = QHBoxLayout()
+        self.input_hwid = QLineEdit()
+        self.input_hwid.setPlaceholderText("Nhập HWID của máy tính tại đây")
+        self.input_hwid.setText(lu.get_hardware_id())
+        self.input_hwid.setEnabled(False)
+        self.btn_hwid_copy = QPushButton("Copy")
+        self.btn_hwid_copy.clicked.connect(
+            lambda: QApplication.clipboard().setText(self.input_hwid.text())
+        )
+        input_hwid.addWidget(self.input_hwid)
+        input_hwid.addWidget(self.btn_hwid_copy)
+        # input_hwid.addWidget(self.btn_hwid_copy)
+        group_layout.addLayout(input_hwid)  # ⬅ thêm layout này trước
+
+        # Ô nhập mã kích hoạt + nút
         input_layout = QHBoxLayout()
         self.input_code = QLineEdit()
         self.input_code.setPlaceholderText("Nhập mã kích hoạt tại đây")
@@ -510,30 +522,37 @@ class MainWindow(QWidget):
 
         input_layout.addWidget(self.input_code)
         input_layout.addWidget(btn_activate)
-
         group_layout.addLayout(input_layout)
+
         self.group_box.setLayout(group_layout)
 
         # === Bọc QGroupBox để tạo margin trái-phải ===
         wrapper_widget = QWidget()
         wrapper_layout = QVBoxLayout(wrapper_widget)
-        wrapper_layout.setContentsMargins(
-            10, 0, 10, 0)  # left, top, right, bottom
+        wrapper_layout.setContentsMargins(10, 0, 10, 0)
         wrapper_layout.addWidget(self.group_box)
 
         # Thêm vào layout chính
         self.main_content_layout.addWidget(wrapper_widget)
 
         self.group_box.setVisible(True)
-        if __import__("os").path.exists("license.lic"):
-            # self.group_box.setVisible(True)
-            status, data = check_license()
-            print(status, data)
-            if status:
-                self.group_box.setVisible(False)
-            else:
-                self.append_log(
-                    f"⚠️ Bản quyền không hợp lệ, vui lòng kích hoạt lại", "warning")
+
+        key = lu.load_license_key()
+        ok, msg = lu.verify_license(key)
+        if ok:
+            self.group_box.setVisible(False)
+            self.append_log(
+                f"✅ Kích hoạt thành công!  thời gian sử dụng: {msg}", "info")
+
+        # if __import__("os").path.exists("license.lic"):
+        #     # self.group_box.setVisible(True)
+        #     status, data = check_license()
+        #     print(status, data)
+        #     if status:
+
+        #     else:
+        #         self.append_log(
+        #             f"⚠️ Bản quyền không hợp lệ, vui lòng kích hoạt lại", "warning")
 
         # print(data)  # data lúc này là chuỗi báo lỗi
 
@@ -579,18 +598,34 @@ class MainWindow(QWidget):
             )
 
     def apply_manager_key(self):
-
-        if self.input_code.text() == "HTPRO":
-            create_license()
-            if __import__("os").path.exists("license.lic"):
-                status, data = check_license()
-                if not status:
-                    self.group_box.setVisible(True)
-                else:
-                    self.group_box.setVisible(False)
+        input_code = self.input_code.text().strip()
+        if input_code == "HTPRO":
+            hwid = lu.get_hardware_id()
+            options = {
+                "1": 7,
+                "2": 14,
+                "3": 30,
+                "4": 180,
+                "5": 365,
+                "6": "forever"
+            }
+            hwid_val, expire_date, key = lu.create_license(
+                hwid, "forever")
+            key = lu.load_license_key()
+            ok, msg = lu.verify_license(key)
+            if ok:
+                self.append_log(
+                    f"✅ Kích hoạt thành công! ({msg})", "info")
+                self.group_box.setVisible(False)
         else:
-            QMessageBox.warning(
-                self, "Thông báo", "Sai mã kích hoạt")
+            ok, msg = lu.verify_license(input_code)
+            if ok:
+                lu.save_license_key(input_code)
+                self.append_log(f"✅ Kích hoạt thành công! ({msg})", "info")
+                self.group_box.setVisible(False)
+            else:
+                QMessageBox.warning(
+                    self, "Thông báo", "Sai mã kích hoạt")
 
     def append_log(self, message, level=""):
         current_time = QTime.currentTime().toString("HH:mm:ss")
