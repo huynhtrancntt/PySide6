@@ -18,3 +18,10 @@ if exist venv\Scripts\activate.bat (
 )
 
 cmd
+
+@REM $PROFILE
+@REM if (!(Test-Path -Path $PROFILE)) {
+@REM     New-Item -Type File -Path $PROFILE -Force
+@REM }
+@REM notepad $PROFILE
+@REM Set-Alias run "D:\DuAn\MyProject\run.bat"
