@@ -4,4 +4,4 @@ pyinstaller --onefile --name=TTS_UI ^
 --hidden-import=edge_tts ^
 --hidden-import=pygame ^
 --hidden-import=PySide6 ^
-tts_ui.py
+app_main_optimized.py

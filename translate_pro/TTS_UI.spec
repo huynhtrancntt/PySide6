@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['tts_ui.py'],
+    ['app_main_optimized.py'],
     pathex=[],
     binaries=[],
     datas=[],

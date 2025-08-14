@@ -59,7 +59,7 @@ def _init_addStyle(self):
         }}
         QMenu::item {{
             padding: 8px 16px;
-        }}   
+        }}
         QMenu::item:selected {{
             background-color: #1e293b;
             color: #ffffff;
@@ -125,12 +125,6 @@ def _init_addStyle(self):
             border-radius: 6px;
             padding: 6px;
         }}
-        QTextEdit:hover {{
-            border: 1px solid #28a745;
-        }}
-        QLineEdit:hover {{
-            border: 1px solid #28a745;
-        }}
         QFrame#versionBox {{
             background-color: #0d2b32;
             border-radius: 10px;
@@ -151,7 +145,7 @@ def _init_addStyle(self):
             color: #e2e8f0;
             border: 1px solid #334155;
             border-radius: 6px;
-            padding: 6px;   
+            padding: 6px;
         }}
         QComboBox::drop-down {{
             subcontrol-origin: padding;
@@ -221,9 +215,9 @@ def _init_addStyle(self):
             background-color: #4a5568;
         }}
         QListWidget::item:selected {{
-            background-color: #4a5568;
+            background-color: #4299e1;
             color: #ffffff;
-        }}    
+        }}
         QProgressBar {{
             border: 2px solid #4299e1;
             border-radius: 6px;
@@ -236,7 +230,7 @@ def _init_addStyle(self):
         QProgressBar::chunk {{
             background-color: #4299e1;
             border-radius: 5px;
-        }}   
+        }}
         QTabBar::tab {{
                 font-weight: bold;
                 color: white;
@@ -262,13 +256,30 @@ def _init_addStyle(self):
                 subcontrol-position: top left;  /* Vị trí tiêu đề */
                 padding: 0 5px;                 /* Khoảng cách giữa chữ và viền */
                 /* color: #FFD700;*/                 /* Màu chữ tiêu đề */
-            }}  
+            }}
 
-            
+            QPushButton#btn_refresh{{
+                background: #151b2b;
+            }}
+            QPushButton#btn_refresh {{
+            background: transparent;
+            color: #e5e7eb;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 16px;
+            min-width: 20px;
+            min-height: px;
+        }}
+        QPushButton#btn_refresh:hover {{
+    background: rgba(255,255,255,0.06);
+}}
+QPushButton#btn_refresh:pressed {{
+    background: rgba(255,255,255,0.10);
+}}
+
 /* ----- Player container ----- */
 #PlayerPanel {{
-         /* nền tối */
-    border: 1px solid #334155;
+    background: #151b2b;            /* nền tối */
+    border: 1px solid rgba(255,255,255,0.06);
     border-radius: 12px;
     padding: 8px;
 }}
@@ -279,8 +290,8 @@ QPushButton#PlayerPlay {{
     color: #e5e7eb;
     border: 1px solid rgba(255,255,255,0.14);
     border-radius: 16px;
-    min-width: 16px;
-    min-height: 16px;
+    min-width: 32px;
+    min-height: 32px;
 }}
 QPushButton#PlayerPlay:hover {{
     background: rgba(255,255,255,0.06);
@@ -291,27 +302,27 @@ QPushButton#PlayerPlay:pressed {{
 
 /* ----- Thanh seek (tiến trình) ----- */
 QSlider#PlayerSeek::groove:horizontal {{
-    height: 8px;
-    background: #334155;            /* rãnh xám */
+    height: 6px;
+    background: #2a3042;            /* rãnh xám */
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
 }}
 QSlider#PlayerSeek::sub-page:horizontal {{
-    background: #05ff8f;            /* phần đã chạy */
+    background: #8b95a7;            /* phần đã chạy */
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
 }}
 QSlider#PlayerSeek::add-page:horizontal {{
-    background: #334155;            /* phần chưa chạy */
+    background: #2a3042;            /* phần chưa chạy */
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
 }}
 QSlider#PlayerSeek::handle:horizontal {{
     width: 14px;
     margin: -5px 0;                 /* nhô ra giữa rãnh */
     border-radius: 7px;
-    background: #e2e8f0;            /* nút kéo xám nhạt */
-    border: 2px solid #16a34a;      /* viền xám xanh */
+    background: #cbd5e1;            /* nút kéo xám nhạt */
+    border: 2px solid #64748b;      /* viền xám xanh */
 }}
 
 /* ----- Thanh volume (nhỏ, gọn) ----- */
@@ -319,20 +330,20 @@ QSlider#PlayerVol {{
     max-width: 140px;
 }}
 QSlider#PlayerVol::groove:horizontal {{
-    height: 8px;
-    background: #334155;
+    height: 6px;
+    background: #22c55e;
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
 }}
 QSlider#PlayerVol::sub-page:horizontal {{
-    background: #05ff8f;            /* xanh lá dịu (có thể đổi) */
+    background: #22c55e;            /* xanh lá dịu (có thể đổi) */
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
 }}
 QSlider#PlayerVol::add-page:horizontal {{
-    background: #334155;
+    background: #2a3042;
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
 }}
 QSlider#PlayerVol::handle:horizontal {{
     width: 14px;
@@ -340,6 +351,11 @@ QSlider#PlayerVol::handle:horizontal {{
     border-radius: 7px;
     background: #e2e8f0;
     border: 2px solid #16a34a;      /* viền xanh lá dịu */
+}}
+
+/* Nhãn thời gian */
+QLabel {{
+    color: #e5e7eb;
 }}
 
 
