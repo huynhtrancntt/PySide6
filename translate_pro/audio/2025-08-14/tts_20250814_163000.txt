@@ -1,8 +1,0 @@
-Created: 2025-08-14 16:30:00
-Lang: vi
-Gender: Female
-Voice: vi-VN-HoaiMyNeural
-Rate(50-250): 182
-
------ TEXT -----
-Xin chào! Đây là giọng nói tiếng Việt.
